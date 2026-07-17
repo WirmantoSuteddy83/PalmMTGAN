@@ -31,7 +31,7 @@ This repository uses a flat structure — all Python files import each other dir
 ## Installation
 
 ```bash
-git clone https://github.com/LearningNewbie2025/PalmMTGAN.git
+git clone https://github.com/WirmantoSuteddy83/PalmMTGAN.git
 cd PalmMTGAN
 pip install -r requirements.txt
 ```
@@ -58,7 +58,7 @@ data/PalmSen2UAV/
     └── Mask_GT/
 ```
 
-The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. The PalmSen2UAV dataset used in this study is available upon reasonable request. [dataset download link/DOI here once released.]
+The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. [Add dataset download link/DOI here once released.]
 
 ## Usage
 
@@ -118,4 +118,4 @@ This research is funded by Hibah P2MI ITB (Project ID: STEI.PPMI-1-39-2026). The
 
 ## Contact
 
-For questions about this repository, please open an issue, or contact the corresponding author (Wirmanto Suteddy, wirmantosuteddy@gmail.com).
+For questions about this repository, please open an issue, or contact the corresponding author (Emir Husni, ehusni@itb.ac.id).
