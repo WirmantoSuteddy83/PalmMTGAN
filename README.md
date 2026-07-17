@@ -118,4 +118,4 @@ This research is funded by Hibah P2MI ITB (Project ID: STEI.PPMI-1-39-2026). The
 
 ## Contact
 
-For questions about this repository, please open an issue, or contact the corresponding author (Emir Husni, ehusni@itb.ac.id).
+For questions about this repository, please open an issue, or contact the corresponding author (Wirmanto Suteddy, wirmantosuteddy@gmail.com).
