@@ -1,4 +1,20 @@
+"""
+PalmMTGAN - Stage 2: Adversarial Training
+--------------------------------------------
+Trains PalmMTGAN's generator jointly with the SR and segmentation
+discriminators. Requires a pretrained generator checkpoint produced by
+Pretrain_PalmMTGAN.py.
+
+Example usage:
+    python Train_PalmMTGAN.py \
+        --data_path ./data/PalmSen2UAV \
+        --save_path ./checkpoints/adversarial \
+        --pretrained_path ./checkpoints/pretrain/best_pretrained_IoU.pth \
+        --epochs 100 --batch_size 64
+"""
+
 import os
+import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -27,7 +43,35 @@ from metrics_PalmMTGAN import (
     save_visuals_grid_header
 )
 
+
 # ----------------------------------------------------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(description="PalmMTGAN - Adversarial Training")
+
+    # Paths (previously hardcoded, now configurable)
+    parser.add_argument('--data_path', type=str, default='./data/PalmSen2UAV',
+                         help="Root dataset directory containing 'train/' and 'val/' subfolders.")
+    parser.add_argument('--save_path', type=str, default='./checkpoints/adversarial',
+                         help="Directory to save logs, CSV metrics, checkpoints, and visualizations.")
+    parser.add_argument('--pretrained_path', type=str,
+                         default='./checkpoints/pretrain/best_pretrained_IoU.pth',
+                         help="Path to the pretrained generator checkpoint (Stage 1 output). "
+                              "If not found, training proceeds without pretrained initialization.")
+
+    # Training hyperparameters
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--lr_g', type=float, default=1e-4, help="Generator learning rate.")
+    parser.add_argument('--lr_d', type=float, default=4e-4, help="Discriminator learning rate.")
+    parser.add_argument('--grad_clip', type=float, default=1.0)
+    parser.add_argument('--patience', type=int, default=15,
+                         help="Early stopping patience (epochs without IoU improvement).")
+    parser.add_argument('--seed', type=int, default=42)
+
+    return parser.parse_args()
+
+
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -38,28 +82,31 @@ def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-set_seed(42)
+
+args = parse_args()
+set_seed(args.seed)
 
 # --- KONFIGURASI --------------------------------------------------------
-DATA_PATH = "/content/dataset/Dataset_PalmSen2UAV_9537data"
-SAVE_PATH = "/content/drive/MyDrive/S3/GAN/Eksperimen_PalmMTGAN_V2"
+DATA_PATH = args.data_path
+SAVE_PATH = args.save_path
 LOG_PATH = os.path.join(SAVE_PATH, "gan_log.txt")
-VISUAL_PATH = os.path.join(SAVE_PATH, "Visuals_gan")
+VISUAL_PATH = os.path.join(SAVE_PATH, "visuals_gan")
 CSV_PATH = os.path.join(SAVE_PATH, "gan_metrics.csv")
-PRETRAINED_GEN = os.path.join(SAVE_PATH, "best_pretrained_IoU.pth")
+PRETRAINED_GEN = args.pretrained_path
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-BATCH_SIZE = 64
-NUM_WORKERS = 4
-EPOCHS = 100
-LR_G = 1e-4
-LR_D = 4e-4
-GRAD_CLIP = 1.0
-PATIENCE = 15
+BATCH_SIZE = args.batch_size
+NUM_WORKERS = args.num_workers
+EPOCHS = args.epochs
+LR_G = args.lr_g
+LR_D = args.lr_d
+GRAD_CLIP = args.grad_clip
+PATIENCE = args.patience
 
 os.makedirs(SAVE_PATH, exist_ok=True)
 os.makedirs(VISUAL_PATH, exist_ok=True)
+
 
 # ----------------------------------------------------------------------
 def write_log(msg):
@@ -68,8 +115,11 @@ def write_log(msg):
         f.write(f"[{timestamp}] {msg}\n")
     print(msg)
 
+
 def main():
-    write_log("🎯 MEMULAI PELATIHAN GAN (PalmMTGAN) – Full Metrics + Early Stop + Cosine")
+    write_log("STARTING ADVERSARIAL TRAINING (PalmMTGAN) - Full Metrics + Early Stop + Cosine")
+    write_log(f"Config: data_path={DATA_PATH}, save_path={SAVE_PATH}, "
+              f"pretrained_path={PRETRAINED_GEN}, epochs={EPOCHS}, batch_size={BATCH_SIZE}")
 
     netG = PalmMTGAN_Generator().to(DEVICE)
     netD_SR = Discriminator_SR().to(DEVICE)
@@ -77,9 +127,9 @@ def main():
 
     if os.path.exists(PRETRAINED_GEN):
         netG.load_state_dict(torch.load(PRETRAINED_GEN, map_location=DEVICE))
-        write_log(f"✅ Generator dimuat dari {PRETRAINED_GEN}")
+        write_log(f"Generator loaded from {PRETRAINED_GEN}")
     else:
-        write_log("⚠️ Pretrained generator tidak ditemukan, lanjut tanpa inisialisasi")
+        write_log(f"Pretrained generator not found at {PRETRAINED_GEN}, continuing without initialization")
 
     criterion_gan = PalmMTGANLoss(
         use_uncertainty=True,
@@ -191,7 +241,6 @@ def main():
 
         # ================== VALIDASI (METRIK LENGKAP) ==================
         netG.eval()
-        # Kumpulkan semua prediksi untuk evaluasi batch
         all_metrics_sum = None
         total_batches = 0
         with torch.no_grad():
@@ -199,7 +248,6 @@ def main():
                 lr_v, hr_v, mask_v = lr_v.to(DEVICE), hr_v.to(DEVICE), mask_v.to(DEVICE)
                 with torch.amp.autocast('cuda'):
                     sr_v, seg_v, _, _ = netG(lr_v)
-                # evaluate_batch menghitung rata-rata per batch
                 batch_metrics = evaluate_batch(sr_v, hr_v, seg_v, mask_v)
                 if all_metrics_sum is None:
                     all_metrics_sum = {k: 0.0 for k in batch_metrics}
@@ -207,16 +255,13 @@ def main():
                     all_metrics_sum[k] += batch_metrics[k]
                 total_batches += 1
 
-        # Rata-rata seluruh validasi
         avg_metrics = {k: v / total_batches for k, v in all_metrics_sum.items()}
 
-        # Log ke file dan CSV
         log_msg = (f"Ep {epoch} | IoU: {avg_metrics['IoU']:.4f} | F1: {avg_metrics['F1_Score']:.4f} | "
                    f"AE: {avg_metrics['Area_Error']:.2f}% | LPIPS: {avg_metrics['LPIPS']:.4f} | "
                    f"PSNR: {avg_metrics['PSNR']:.2f}")
         write_log(log_msg)
 
-        # Siapkan data CSV
         csv_row = [epoch,
                    epoch_loss_G/len(loader_t),
                    epoch_loss_D_SR/len(loader_t),
@@ -227,7 +272,6 @@ def main():
                    avg_metrics['IoU'], avg_metrics['F1_Score'], avg_metrics['Precision'],
                    avg_metrics['Recall'], avg_metrics['Area_Error']]
 
-        # Tambahkan log_sigma
         if criterion_gan.use_uncertainty:
             csv_row += [
                 criterion_gan.log_sigma_l1.item(),
@@ -247,7 +291,7 @@ def main():
         if current_iou > best_iou:
             best_iou = current_iou
             torch.save(netG.state_dict(), os.path.join(SAVE_PATH, 'best_gan_IoU.pth'))
-            write_log(f"⭐ Rekor IoU: {best_iou:.4f}")
+            write_log(f"New best IoU: {best_iou:.4f}")
             early_stop_counter = 0
         else:
             early_stop_counter += 1
@@ -264,7 +308,7 @@ def main():
 
         # Early stopping
         if early_stop_counter >= PATIENCE:
-            write_log(f"⏹️ Early stopping setelah {PATIENCE} epoch tanpa peningkatan IoU.")
+            write_log(f"Early stopping after {PATIENCE} epochs without IoU improvement.")
             break
 
         # Scheduler step
@@ -284,14 +328,15 @@ def main():
         save_visuals_grid_header(lr_vis, hr_vis, sr_vis, mask_vis, seg_vis, name_vis, VISUAL_PATH)
 
     csv_file.close()
-    write_log("✅ PELATIHAN GAN SELESAI.")
+    write_log("ADVERSARIAL TRAINING DONE.")
+
 
 if __name__ == "__main__":
     try:
         main()
-        print("\n[SUCCESS] Pelatihan GAN selesai.")
+        print("\n[SUCCESS] Adversarial training completed.")
     except Exception as e:
-        print(f"\n[ERROR] Pelatihan GAN terhenti karena: {e}")
+        print(f"\n[ERROR] Adversarial training stopped due to: {e}")
     finally:
         try:
             from google.colab import runtime
