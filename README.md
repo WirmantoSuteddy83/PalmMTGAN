@@ -58,7 +58,7 @@ data/PalmSen2UAV/
     └── Mask_GT/
 ```
 
-The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. [Add dataset download link/DOI here once released.]
+The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. The PalmSen2UAV dataset used in this study is available upon reasonable request. [dataset download link/DOI here once released.]
 
 ## Usage
 
@@ -114,7 +114,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## Acknowledgments
 
-This research is funded by Hibah P2MI ITB (Project ID: STEI.PPMI-1-39-2026). The authors thank PT Perkebunan Nusantara IV Regional 4 for providing UAV imagery of oil palm plantations in Jambi, Indonesia, and PT Terra Drone Indonesia for providing UAV imagery of oil palm plantations in East Kalimantan, Indonesia.
+The authors thank PT Perkebunan Nusantara IV Regional 4 for providing UAV imagery of oil palm plantations in Jambi, Indonesia, and PT Terra Drone Indonesia for providing UAV imagery of oil palm plantations in East Kalimantan, Indonesia.
 
 ## Contact
 
