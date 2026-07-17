@@ -58,7 +58,7 @@ data/PalmSen2UAV/
     └── Mask_GT/
 ```
 
-The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. [Add dataset download link/DOI here once released.]
+The full PalmSen2UAV dataset (9,537 triplets from oil palm plantations in Jambi and East Kalimantan, Indonesia) accompanies the paper. The PalmSen2UAV dataset used in this study is available upon reasonable request. [dataset download link/DOI here once released.]
 
 ## Usage
 
