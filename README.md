@@ -106,7 +106,7 @@ If you use this code or the PalmSen2UAV dataset in your research, please cite:
 }
 ```
 
-*(Update volume/pages/DOI once the paper is formally published.)*
+*(Updated volume/pages/DOI once the paper is formally published.)*
 
 ## License
 
